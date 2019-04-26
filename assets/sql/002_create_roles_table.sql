@@ -1,15 +1,12 @@
 -- +migrate Up
 -- SQL in section 'Up' is executed when this migration is applied
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS roles (
   id SERIAL NOT NULL PRIMARY KEY,
-  first_name TEXT NOT NULL,
-  last_name TEXT NOT NULL,
-  email TEXT NOT NULL,
-  password TEXT NOT NULL,    
+  name TEXT UNIQUE NOT NULL,  
   created_at TIMESTAMP NULL,
   updated_at TIMESTAMP NULL
-);
+);  
 
 -- +migrate Down
 -- SQL section 'Down' is executed when this migration is rolled back
-DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS roles;

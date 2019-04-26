@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,7 +13,7 @@ import (
 
 func getAllUsers(c *gin.Context) {
 	var users []models.User
-	err := db.GetConnection().Model(&users).Select() // get all users
+	err := db.GetConnection().Model(&users).Column("Roles").Select()
 
 	if err != nil {
 		httpInternalServerErrorResponse(c, err.Error())
@@ -26,15 +27,17 @@ func getAllUsers(c *gin.Context) {
 }
 
 func createUser(c *gin.Context) {
+	var role models.Role
+
 	form := &struct {
 		FirstName string `form:"first_name" json:"first_name"`
 		LastName  string `form:"last_name" json:"last_name"`
 		Email     string `form:"email" json:"email"`
 		Password  string `form:"password" json:"password"`
 		Confirm   string `form:"confirm" json:"confirm"`
-		Role      string `form:"role" json:"role"`
+		Roles     []int  `form:"roles" json:"roles"`
 	}{}
-	c.Bind(form)
+	c.BindJSON(form)
 
 	// form validation
 	err := validation.Errors{
@@ -42,8 +45,8 @@ func createUser(c *gin.Context) {
 		"last_name":  validation.Validate(form.LastName, validation.Required),
 		"email":      validation.Validate(form.Email, validation.Required, is.Email),
 		"password":   validation.Validate(form.Password, validation.Required),
-		"confirm":    validation.Validate(form.Confirm, validation.In(form.Password).Error("Your password and confirmation password do not match.")),
-		"role":       validation.Validate(form.Role, validation.Required, validation.In("user", "admin").Error("must be a 'user' or 'admin'")),
+		"confirm":    validation.Validate(form.Confirm, validation.In(form.Password).Error("Your password and confirmation password do not match")),
+		"roles":      validation.Validate(form.Roles, validation.Required, validation.Length(1, 2)),
 	}.Filter()
 
 	if err != nil {
@@ -51,13 +54,20 @@ func createUser(c *gin.Context) {
 		return
 	}
 
+	// Check existing role in db
+	for _, val := range uniqueNum(form.Roles) {
+		err = db.GetConnection().Model(&role).Where("id = ?", val).Select()
+		if err != nil {
+			httpValidationErrorResponse(c, fmt.Sprintf("pg: no role (%d) in result set", val))
+			return
+		}
+	}
+
 	user := models.User{
 		FirstName: form.FirstName,
 		LastName:  form.LastName,
 		Email:     form.Email,
 		Password:  form.Password,
-		Confirm:   form.Confirm,
-		Role:      form.Role,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -68,8 +78,24 @@ func createUser(c *gin.Context) {
 		return
 	}
 
+	for _, val := range uniqueNum(form.Roles) {
+		userRole := models.UserRole{
+			UserID:    user.ID,
+			RoleID:    val,
+			GrantDate: time.Now(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		err = db.GetConnection().Insert(&userRole)
+		if err != nil {
+			httpInternalServerErrorResponse(c, err.Error())
+			return
+		}
+	}
+
 	result := map[string]interface{}{
-		"users": user,
+		"user": "Create user successfully",
 	}
 
 	httpOkResponse(c, result)
@@ -81,14 +107,14 @@ func getUserById(c *gin.Context) {
 	id := c.Param("id")
 
 	// get from database
-	err := db.GetConnection().Model(&user).Where("id = ?", id).Select()
+	err := db.GetConnection().Model(&user).Column("Roles").Where("id = ?", id).Select()
 	if err != nil {
 		httpInternalServerErrorResponse(c, err.Error())
 		return
 	}
 
 	result := map[string]interface{}{
-		"users": user,
+		"user": user,
 	}
 
 	httpOkResponse(c, result)
@@ -96,6 +122,8 @@ func getUserById(c *gin.Context) {
 
 func updateUserById(c *gin.Context) {
 	var user models.User
+	var role models.Role
+	var userRoles []models.UserRole
 
 	form := &struct {
 		FirstName string `form:"first_name" json:"first_name"`
@@ -103,10 +131,10 @@ func updateUserById(c *gin.Context) {
 		Email     string `form:"email" json:"email"`
 		Password  string `form:"password" json:"password"`
 		Confirm   string `form:"confirm" json:"confirm"`
-		Role      string `form:"role" json:"role"`
+		Roles     []int  `form:"roles" json:"roles"`
 	}{}
 	id := c.Param("id")
-	c.Bind(form)
+	c.BindJSON(form)
 
 	// form validation
 	err := validation.Errors{
@@ -114,13 +142,22 @@ func updateUserById(c *gin.Context) {
 		"last_name":  validation.Validate(form.LastName, validation.Required),
 		"email":      validation.Validate(form.Email, validation.Required, is.Email),
 		"password":   validation.Validate(form.Password, validation.Required),
-		"confirm":    validation.Validate(form.Confirm, validation.In(form.Password).Error("Your password and confirmation password do not match.")),
-		"role":       validation.Validate(form.Role, validation.Required, validation.In("user", "admin").Error("must be a 'user' or 'admin'")),
+		"confirm":    validation.Validate(form.Confirm, validation.In(form.Password).Error("Your password and confirmation password do not match")),
+		"roles":      validation.Validate(form.Roles, validation.Required, validation.Length(1, 2)),
 	}.Filter()
 
 	if err != nil {
 		httpValidationErrorResponse(c, err.Error())
 		return
+	}
+
+	// Check existing role in db
+	for _, val := range uniqueNum(form.Roles) {
+		err = db.GetConnection().Model(&role).Where("id = ?", val).Select()
+		if err != nil {
+			httpValidationErrorResponse(c, fmt.Sprintf("pg: no role (%d) in result set", val))
+			return
+		}
 	}
 
 	err = db.GetConnection().Model(&user).Where("id = ?", id).Select()
@@ -135,8 +172,7 @@ func updateUserById(c *gin.Context) {
 		LastName:  form.LastName,
 		Email:     form.Email,
 		Password:  form.Password,
-		Confirm:   form.Confirm,
-		Role:      form.Role,
+		UpdatedAt: time.Now(),
 	}
 
 	_, err = db.GetConnection().Model(&user).
@@ -144,8 +180,7 @@ func updateUserById(c *gin.Context) {
 		Column("last_name").
 		Column("email").
 		Column("password").
-		Column("confirm").
-		Column("role").
+		Column("updated_at").
 		WherePK().Returning("*").Update()
 
 	if err != nil {
@@ -153,8 +188,46 @@ func updateUserById(c *gin.Context) {
 		return
 	}
 
+	err = db.GetConnection().Model(&userRoles).Where("user_id = ?", user.ID).Select()
+	if err != nil {
+		httpValidationErrorResponse(c, err.Error())
+		return
+	}
+
+	for _, item := range userRoles {
+		err = db.GetConnection().Model(&item).Where("user_id = ?", user.ID).
+			Where("role_id = ?", item.RoleID).Select()
+
+		if err != nil {
+			httpInternalServerErrorResponse(c, err.Error())
+			return
+		}
+
+		err = db.GetConnection().Delete(&item)
+		if err != nil {
+			httpInternalServerErrorResponse(c, err.Error())
+			return
+		}
+	}
+
+	for _, val := range uniqueNum(form.Roles) {
+		userRole := models.UserRole{
+			UserID:    user.ID,
+			RoleID:    val,
+			GrantDate: time.Now(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+
+		err = db.GetConnection().Insert(&userRole)
+		if err != nil {
+			httpInternalServerErrorResponse(c, err.Error())
+			return
+		}
+	}
+
 	result := map[string]interface{}{
-		"user": user,
+		"user": "Update user successfully",
 	}
 
 	httpOkResponse(c, result)
@@ -162,6 +235,7 @@ func updateUserById(c *gin.Context) {
 
 func deleteUserById(c *gin.Context) {
 	var user models.User
+	var userRoles []models.UserRole
 
 	id := c.Param("id")
 	err := validation.Errors{
@@ -172,13 +246,39 @@ func deleteUserById(c *gin.Context) {
 		return
 	}
 
-	err = db.GetConnection().Model(&user).Where("id = ?", id).Select()
+	err = db.GetConnection().Model(&user).Column("Roles").Where("id = ?", id).Select()
 	if err != nil {
 		httpInternalServerErrorResponse(c, err.Error())
 		return
 	}
 
-	db.GetConnection().Delete(&user)
+	err = db.GetConnection().Model(&userRoles).Where("user_id = ?", user.ID).Select()
+	if err != nil {
+		httpInternalServerErrorResponse(c, err.Error())
+		return
+	}
+
+	for _, item := range userRoles {
+		err = db.GetConnection().Model(&item).Where("user_id = ?", user.ID).
+			Where("role_id = ?", item.RoleID).Select()
+
+		if err != nil {
+			httpInternalServerErrorResponse(c, err.Error())
+			return
+		}
+
+		err = db.GetConnection().Delete(&item)
+		if err != nil {
+			httpInternalServerErrorResponse(c, err.Error())
+			return
+		}
+	}
+
+	err = db.GetConnection().Delete(&user)
+	if err != nil {
+		httpInternalServerErrorResponse(c, err.Error())
+		return
+	}
 
 	result := map[string]interface{}{
 		"user": "Delete user successfully",
