@@ -2,12 +2,21 @@ package api
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func (c *Config) Start() {
+func SetupRouter() *gin.Engine {
 	router := gin.Default()
+
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": map[string]string{
+				"message": "Ok",
+			},
+		})
+	})
 
 	v1 := router.Group("/api/v1")
 	{
@@ -25,6 +34,12 @@ func (c *Config) Start() {
 		v1.PUT("/roles/:id", updateRoleById)
 		v1.DELETE("/roles/:id", deleteRoleById)
 	}
+
+	return router
+}
+
+func (c *Config) Start() {
+	router := SetupRouter()
 
 	listenPort := fmt.Sprintf(":%s", c.ListenPort)
 	router.Run(listenPort)

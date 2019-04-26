@@ -2,6 +2,18 @@
 
 
 [[projects]]
+  name = "github.com/asaskevich/govalidator"
+  packages = ["."]
+  revision = "ccb8e960c48f04d6935e72476ae4a51028f9e22f"
+  version = "v9"
+
+[[projects]]
+  name = "github.com/davecgh/go-spew"
+  packages = ["spew"]
+  revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
+  version = "v1.1.1"
+
+[[projects]]
   branch = "master"
   name = "github.com/gin-contrib/sse"
   packages = ["."]
@@ -15,7 +27,7 @@
 
 [[projects]]
   name = "github.com/go-ozzo/ozzo-validation"
-  packages = ["."]
+  packages = [".","is"]
   revision = "106681dbb37bfa3e7683c4c8129cb7f5925ea3e9"
   version = "v3.5.0"
 
@@ -80,10 +92,22 @@
   version = "1.0.1"
 
 [[projects]]
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/rubenv/sql-migrate"
   packages = [".","sqlparse"]
   revision = "54bad0a9b051368ffec9cd2b869789c2b8eaea35"
+
+[[projects]]
+  name = "github.com/stretchr/testify"
+  packages = ["assert"]
+  revision = "ffdc059bfe9ce6a4e144ba849dbedead332c6053"
+  version = "v1.3.0"
 
 [[projects]]
   name = "github.com/ugorji/go"
@@ -95,13 +119,13 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["pbkdf2"]
-  revision = "df01cb2cc480549d72034218dd98bf97671450ac"
+  revision = "c05e17bb3b2dca130fc919668a96b4bec9eb9442"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "e8e3143a4f4a00f1fafef0dd82ba78223281b01b"
+  revision = "16072639606ea9e22c7d86e4cbd6af6314f4193c"
 
 [[projects]]
   name = "gopkg.in/go-playground/validator.v8"
@@ -130,6 +154,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "986847c0a03e1bef067a5cab31101eac8d15e196fb0c8e74f273ae6f1e182561"
+  inputs-digest = "670ba00fd441898be653736dd9873e39e1afc150619def72eeb13a5c112aab39"
   solver-name = "gps-cdcl"
   solver-version = 1
