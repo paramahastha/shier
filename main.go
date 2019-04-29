@@ -6,12 +6,16 @@ import (
 
 	"github.com/paramahastha/shier/internal/api"
 	"github.com/paramahastha/shier/pkg/db"
+	"github.com/paramahastha/shier/pkg/redis"
 )
 
 var (
 	listenPort = flag.String("listen-port", "9000", "Port where app listen to")
 	dbUrl      = flag.String("db-url", "postgres://docker:docker@localhost:5432/shierdb?sslmode=disable", "Connection string to postgres")
 	debug      = flag.Bool("debug", true, "Want to verbose query or not")
+	redisAddr  = flag.String("redis-addr", ":6379", "Address string to redis")
+	redisPass  = flag.String("redis-pass", "", "Password string to redis")
+	redisDb    = flag.Int("redis-db", 0, "DB integer to redis")
 )
 
 func main() {
@@ -29,6 +33,20 @@ func main() {
 		log.Fatalf("database connection failed")
 	}
 	defer dbConn.Close()
+
+	// redis configurations
+	redisConfig := redis.Config{
+		Addr:     *redisAddr,
+		Password: *redisPass,
+		DB:       *redisDb,
+	}
+
+	// redis connection
+	err = redis.NewConnection(&redisConfig)
+	if err != nil {
+		log.Fatalf("redis connection failed")
+	}
+	defer redis.GetConnection().Close()
 
 	// run migrations
 	err = db.Migrate(*dbUrl)

@@ -1,14 +1,17 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"
+	"github.com/go-redis/redis"
 	"github.com/paramahastha/shier/internal/models"
 	"github.com/paramahastha/shier/pkg/db"
+	redisdb "github.com/paramahastha/shier/pkg/redis"
 )
 
 func getAllUsers(c *gin.Context) {
@@ -45,7 +48,7 @@ func createUser(c *gin.Context) {
 		"last_name":  validation.Validate(form.LastName, validation.Required),
 		"email":      validation.Validate(form.Email, validation.Required, is.Email),
 		"password":   validation.Validate(form.Password, validation.Required),
-		"confirm":    validation.Validate(form.Confirm, validation.In(form.Password).Error("Your password and confirmation password do not match")),
+		"confirm":    validation.Validate(form.Confirm, validation.Required, validation.In(form.Password).Error("Your password and confirmation password do not match")),
 		"roles":      validation.Validate(form.Roles, validation.Required, validation.Length(1, 2)),
 	}.Filter()
 
@@ -106,18 +109,45 @@ func getUserById(c *gin.Context) {
 
 	id := c.Param("id")
 
-	// get from database
-	err := db.GetConnection().Model(&user).Column("Roles").Where("id = ?", id).Select()
-	if err != nil {
-		httpInternalServerErrorResponse(c, err.Error())
-		return
+	val, err := redisdb.GetConnection().Get(fmt.Sprintf("user_%s", id)).Result()
+	if err == redis.Nil {
+		fmt.Println("Hit DB")
+		// get from database
+		err := db.GetConnection().Model(&user).Column("Roles").Where("id = ?", id).Select()
+		if err != nil {
+			httpInternalServerErrorResponse(c, err.Error())
+			return
+		}
+
+		json, err := json.Marshal(user)
+
+		err = redisdb.GetConnection().Set(fmt.Sprintf("user_%s", id), json, 0).Err()
+		if err != nil {
+			panic(err)
+		}
+
+		result := map[string]interface{}{
+			"user": user,
+		}
+
+		httpOkResponse(c, result)
+	} else if err != nil {
+		panic(err)
+	} else {
+		byt := []byte(val)
+		fmt.Println("From Redis")
+
+		if err := json.Unmarshal(byt, &user); err != nil {
+			panic(err)
+		}
+
+		result := map[string]interface{}{
+			"user": user,
+		}
+
+		httpOkResponse(c, result)
 	}
 
-	result := map[string]interface{}{
-		"user": user,
-	}
-
-	httpOkResponse(c, result)
 }
 
 func updateUserById(c *gin.Context) {
@@ -142,7 +172,7 @@ func updateUserById(c *gin.Context) {
 		"last_name":  validation.Validate(form.LastName, validation.Required),
 		"email":      validation.Validate(form.Email, validation.Required, is.Email),
 		"password":   validation.Validate(form.Password, validation.Required),
-		"confirm":    validation.Validate(form.Confirm, validation.In(form.Password).Error("Your password and confirmation password do not match")),
+		"confirm":    validation.Validate(form.Confirm, validation.Required, validation.In(form.Password).Error("Your password and confirmation password do not match")),
 		"roles":      validation.Validate(form.Roles, validation.Required, validation.Length(1, 2)),
 	}.Filter()
 
@@ -224,6 +254,19 @@ func updateUserById(c *gin.Context) {
 			httpInternalServerErrorResponse(c, err.Error())
 			return
 		}
+	}
+
+	err = db.GetConnection().Model(&user).Column("Roles").Where("id = ?", id).Select()
+	if err != nil {
+		httpInternalServerErrorResponse(c, err.Error())
+		return
+	}
+
+	// Update user cache
+	json, err := json.Marshal(user)
+	err = redisdb.GetConnection().Set(fmt.Sprintf("user_%s", id), json, 0).Err()
+	if err != nil {
+		panic(err)
 	}
 
 	result := map[string]interface{}{
