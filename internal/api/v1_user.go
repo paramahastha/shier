@@ -110,8 +110,7 @@ func getUserById(c *gin.Context) {
 	id := c.Param("id")
 
 	val, err := redisdb.GetConnection().Get(fmt.Sprintf("user_%s", id)).Result()
-	if err == redis.Nil {
-		fmt.Println("Hit DB")
+	if err == redis.Nil || val == "" {
 		// get from database
 		err := db.GetConnection().Model(&user).Column("Roles").Where("id = ?", id).Select()
 		if err != nil {
@@ -135,7 +134,6 @@ func getUserById(c *gin.Context) {
 		panic(err)
 	} else {
 		byt := []byte(val)
-		fmt.Println("From Redis")
 
 		if err := json.Unmarshal(byt, &user); err != nil {
 			panic(err)
@@ -321,6 +319,11 @@ func deleteUserById(c *gin.Context) {
 	if err != nil {
 		httpInternalServerErrorResponse(c, err.Error())
 		return
+	}
+
+	err = redisdb.GetConnection().Set(fmt.Sprintf("user_%s", id), "", 0).Err()
+	if err != nil {
+		panic(err)
 	}
 
 	result := map[string]interface{}{
