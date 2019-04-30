@@ -31,3 +31,12 @@ func httpInternalServerErrorResponse(c *gin.Context, errorMessage string) {
 		},
 	})
 }
+
+func httpForbiddenErrorResponse(c *gin.Context, errorMessage string) {
+	c.JSON(http.StatusForbidden, map[string]interface{}{
+		"status": http.StatusForbidden,
+		"error": map[string]interface{}{
+			"message": errorMessage,
+		},
+	})
+}

@@ -59,6 +59,7 @@ func createUser(c *gin.Context) {
 
 	// Check existing role in db
 	for _, val := range uniqueNum(form.Roles) {
+
 		err = db.GetConnection().Model(&role).Where("id = ?", val).Select()
 		if err != nil {
 			httpValidationErrorResponse(c, fmt.Sprintf("pg: no role (%d) in result set", val))

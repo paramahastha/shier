@@ -53,7 +53,7 @@ func createRole(c *gin.Context) {
 	}
 
 	result := map[string]interface{}{
-		"role": role,
+		"role": "Create role successfully",
 	}
 
 	httpOkResponse(c, result)
@@ -119,7 +119,7 @@ func updateRoleById(c *gin.Context) {
 	}
 
 	result := map[string]interface{}{
-		"role": role,
+		"role": "Update role successfully",
 	}
 
 	httpOkResponse(c, result)
