@@ -3,10 +3,11 @@ package api
 import (
 	"time"
 
+	"shier/internal/models"
+	"shier/pkg/db"
+
 	"github.com/gin-gonic/gin"
 	validation "github.com/go-ozzo/ozzo-validation"
-	"github.com/paramahastha/shier/internal/models"
-	"github.com/paramahastha/shier/pkg/db"
 )
 
 func getAllRoles(c *gin.Context) {

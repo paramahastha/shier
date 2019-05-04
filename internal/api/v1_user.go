@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"shier/internal/models"
+	"shier/pkg/db"
+	redisdb "shier/pkg/redis"
+
 	"github.com/gin-gonic/gin"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"
 	"github.com/go-redis/redis"
-	"github.com/paramahastha/shier/internal/models"
-	"github.com/paramahastha/shier/pkg/db"
-	redisdb "github.com/paramahastha/shier/pkg/redis"
 )
 
 func getAllUsers(c *gin.Context) {

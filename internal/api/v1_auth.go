@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"time"
 
+	"shier/internal/models"
+	"shier/pkg/db"
+
 	"github.com/gin-gonic/gin"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"
-	"github.com/paramahastha/shier/internal/models"
-	"github.com/paramahastha/shier/pkg/db"
 )
 
 func signup(c *gin.Context) {

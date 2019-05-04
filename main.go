@@ -4,9 +4,9 @@ import (
 	"flag"
 	"log"
 
-	"github.com/paramahastha/shier/internal/api"
-	"github.com/paramahastha/shier/pkg/db"
-	"github.com/paramahastha/shier/pkg/redis"
+	"shier/internal/api"
+	"shier/pkg/db"
+	"shier/pkg/redis"
 )
 
 var (

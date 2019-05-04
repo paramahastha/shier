@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"net/url"
 
+	"shier/assets"
+
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"github.com/paramahastha/shier/assets"
 	migrate "github.com/rubenv/sql-migrate"
 )
 

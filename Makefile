@@ -1,4 +1,4 @@
-PACKAGE_NAME := github.com/paramahastha/shier
+PACKAGE_NAME := shier
 PROJECT_DIR := $(PWD)
 
 install-dep:
