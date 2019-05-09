@@ -1,42 +1,21 @@
 package api
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 )
 
-func httpOkResponse(c *gin.Context, payload map[string]interface{}) {
-	c.JSON(http.StatusOK, map[string]interface{}{
-		"status": http.StatusOK,
-		"data":   payload,
+func httpSuccessResponse(c *gin.Context, payload interface{}, code int, message string) {
+	c.JSON(code, map[string]interface{}{
+		"data":    payload,
+		"code":    code,
+		"message": message,
 	})
 }
 
-func httpValidationErrorResponse(c *gin.Context, validationErrors string) {
-	c.JSON(http.StatusBadRequest, map[string]interface{}{
-		"status": http.StatusBadRequest,
-		"error": map[string]interface{}{
-			"message": "Validation error",
-			"errors":  validationErrors,
-		},
-	})
-}
-
-func httpInternalServerErrorResponse(c *gin.Context, errorMessage string) {
-	c.JSON(http.StatusInternalServerError, map[string]interface{}{
-		"status": http.StatusInternalServerError,
-		"error": map[string]interface{}{
-			"message": errorMessage,
-		},
-	})
-}
-
-func httpForbiddenErrorResponse(c *gin.Context, errorMessage string) {
-	c.JSON(http.StatusForbidden, map[string]interface{}{
-		"status": http.StatusForbidden,
-		"error": map[string]interface{}{
-			"message": errorMessage,
-		},
+func httpErrorResponse(c *gin.Context, errorPayload interface{}, code int, message string) {
+	c.JSON(code, map[string]interface{}{
+		"errors":  errorPayload,
+		"code":    code,
+		"message": message,
 	})
 }

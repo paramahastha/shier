@@ -1,0 +1,40 @@
+version: '3.5'
+
+services:
+  redis:
+    container_name: shier_redis
+    image: redis
+    ports:
+      - "6000:6379"
+    restart: unless-stopped
+
+  postgres:
+    container_name: shier_postgres
+    image: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-shier_development}
+    ports:
+      - "5000:5432"
+    restart: unless-stopped
+  
+  pgadmin:
+    container_name: shier_pgadmin
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    depends_on:
+      - "postgres"
+    restart: unless-stopped
+
+# networks:
+#   postgres:
+#     driver: bridge
+
+# volumes:
+#     postgres:
+#     pgadmin:

@@ -13,7 +13,7 @@ var (
 	listenPort = flag.String("listen-port", "9000", "Port where app listen to")
 	dbUrl      = flag.String("db-url", "postgres://docker:docker@localhost:5432/shierdb?sslmode=disable", "Connection string to postgres")
 	debug      = flag.Bool("debug", true, "Want to verbose query or not")
-	redisAddr  = flag.String("redis-addr", ":6379", "Address string to redis")
+	redisAddr  = flag.String("redis-addr", ":6000", "Address string to redis")
 	redisPass  = flag.String("redis-pass", "", "Password string to redis")
 	redisDb    = flag.Int("redis-db", 0, "DB integer to redis")
 )

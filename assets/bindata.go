@@ -111,8 +111,8 @@ func bindataAssetsSql001createuserstablesql() (*asset, error) {
 		name: "assets/sql/001_create_users_table.sql",
 		size: 439,
 		md5checksum: "",
-		mode: os.FileMode(436),
-		modTime: time.Unix(1556598807, 0),
+		mode: os.FileMode(420),
+		modTime: time.Unix(1556981097, 0),
 	}
 
 	a := &asset{bytes: bytes, info: info}
@@ -151,7 +151,7 @@ func bindataAssetsSql002createrolestablesql() (*asset, error) {
 		size: 358,
 		md5checksum: "",
 		mode: os.FileMode(420),
-		modTime: time.Unix(1556081073, 0),
+		modTime: time.Unix(1556981097, 0),
 	}
 
 	a := &asset{bytes: bytes, info: info}
@@ -194,7 +194,7 @@ func bindataAssetsSql003createuserroletablesql() (*asset, error) {
 		size: 725,
 		md5checksum: "",
 		mode: os.FileMode(420),
-		modTime: time.Unix(1556099746, 0),
+		modTime: time.Unix(1556981097, 0),
 	}
 
 	a := &asset{bytes: bytes, info: info}

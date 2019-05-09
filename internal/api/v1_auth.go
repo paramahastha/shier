@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"shier/internal/models"
@@ -36,7 +37,7 @@ func signup(c *gin.Context) {
 	}.Filter()
 
 	if err != nil {
-		httpValidationErrorResponse(c, err.Error())
+		httpErrorResponse(c, err.Error(), http.StatusBadRequest, "-")
 		return
 	}
 
@@ -45,7 +46,7 @@ func signup(c *gin.Context) {
 
 		err = db.GetConnection().Model(&role).Where("id = ?", val).Select()
 		if err != nil {
-			httpValidationErrorResponse(c, fmt.Sprintf("pg: no role (%d) in result set", val))
+			httpErrorResponse(c, err.Error(), http.StatusBadRequest, fmt.Sprintf("pg: no role (%d) in result set", val))
 			return
 		}
 	}
@@ -61,7 +62,8 @@ func signup(c *gin.Context) {
 
 	err = db.GetConnection().Insert(&user)
 	if err != nil {
-		httpInternalServerErrorResponse(c, err.Error())
+		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
+		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 		return
 	}
 
@@ -76,16 +78,12 @@ func signup(c *gin.Context) {
 
 		err = db.GetConnection().Insert(&userRole)
 		if err != nil {
-			httpInternalServerErrorResponse(c, err.Error())
+			httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 			return
 		}
 	}
 
-	result := map[string]interface{}{
-		"message": "Register successfully",
-	}
-
-	httpOkResponse(c, result)
+	httpSuccessResponse(c, nil, http.StatusCreated, "Register successfully")
 }
 
 func signin(c *gin.Context) {
@@ -105,21 +103,15 @@ func signin(c *gin.Context) {
 
 	err = db.GetConnection().Model(&user).Where("email = ?", form.Email).Select()
 	if err != nil {
-		httpForbiddenErrorResponse(c, "Invalid email or password.")
+		httpErrorResponse(c, err.Error(), http.StatusForbidden, "Invalid email or password.")
 		return
-		// httpInternalServerErrorResponse(c, err.Error())
-		// return
 	}
 
 	if form.Password != user.Password {
-		httpForbiddenErrorResponse(c, "Invalid email or password.")
+		httpErrorResponse(c, err.Error(), http.StatusForbidden, "Invalid email or password.")
 		return
 	}
 
-	result := map[string]interface{}{
-		"message": "Login successfully",
-	}
-
-	httpOkResponse(c, result)
+	httpSuccessResponse(c, nil, http.StatusOK, "Login successfully")
 
 }

@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"shier/internal/models"
@@ -20,14 +21,14 @@ func getAllUsers(c *gin.Context) {
 	err := db.GetConnection().Model(&users).Column("Roles").Select()
 
 	if err != nil {
-		httpInternalServerErrorResponse(c, err.Error())
+		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 	}
 
 	result := map[string]interface{}{
-		"users": users,
+		"data": users,
 	}
 
-	httpOkResponse(c, result)
+	httpSuccessResponse(c, result["data"], http.StatusOK, "-")
 }
 
 func createUser(c *gin.Context) {
@@ -54,7 +55,7 @@ func createUser(c *gin.Context) {
 	}.Filter()
 
 	if err != nil {
-		httpValidationErrorResponse(c, err.Error())
+		httpErrorResponse(c, err.Error(), http.StatusBadRequest, "-")
 		return
 	}
 
@@ -63,7 +64,7 @@ func createUser(c *gin.Context) {
 
 		err = db.GetConnection().Model(&role).Where("id = ?", val).Select()
 		if err != nil {
-			httpValidationErrorResponse(c, fmt.Sprintf("pg: no role (%d) in result set", val))
+			httpErrorResponse(c, err.Error(), http.StatusBadRequest, fmt.Sprintf("pg: no role (%d) in result set", val))
 			return
 		}
 	}
@@ -79,7 +80,7 @@ func createUser(c *gin.Context) {
 
 	err = db.GetConnection().Insert(&user)
 	if err != nil {
-		httpInternalServerErrorResponse(c, err.Error())
+		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 		return
 	}
 
@@ -94,16 +95,12 @@ func createUser(c *gin.Context) {
 
 		err = db.GetConnection().Insert(&userRole)
 		if err != nil {
-			httpInternalServerErrorResponse(c, err.Error())
+			httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 			return
 		}
 	}
 
-	result := map[string]interface{}{
-		"user": "Create user successfully",
-	}
-
-	httpOkResponse(c, result)
+	httpSuccessResponse(c, nil, http.StatusCreated, "Create user successfully")
 }
 
 func getUserById(c *gin.Context) {
@@ -116,7 +113,7 @@ func getUserById(c *gin.Context) {
 		// get from database
 		err := db.GetConnection().Model(&user).Column("Roles").Where("id = ?", id).Select()
 		if err != nil {
-			httpInternalServerErrorResponse(c, err.Error())
+			httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 			return
 		}
 
@@ -124,28 +121,30 @@ func getUserById(c *gin.Context) {
 
 		err = redisdb.GetConnection().Set(fmt.Sprintf("user_%s", id), json, 0).Err()
 		if err != nil {
-			panic(err)
+			httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
+			return
 		}
 
 		result := map[string]interface{}{
-			"user": user,
+			"data": user,
 		}
 
-		httpOkResponse(c, result)
+		httpSuccessResponse(c, result["data"], http.StatusOK, "-")
 	} else if err != nil {
-		panic(err)
+		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
+		return
 	} else {
 		byt := []byte(val)
 
 		if err := json.Unmarshal(byt, &user); err != nil {
-			panic(err)
+			httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
+			return
 		}
 
 		result := map[string]interface{}{
-			"user": user,
+			"data": user,
 		}
-
-		httpOkResponse(c, result)
+		httpSuccessResponse(c, result["data"], http.StatusOK, "-")
 	}
 
 }
@@ -177,7 +176,7 @@ func updateUserById(c *gin.Context) {
 	}.Filter()
 
 	if err != nil {
-		httpValidationErrorResponse(c, err.Error())
+		httpErrorResponse(c, err.Error(), http.StatusBadRequest, "-")
 		return
 	}
 
@@ -185,14 +184,14 @@ func updateUserById(c *gin.Context) {
 	for _, val := range uniqueNum(form.Roles) {
 		err = db.GetConnection().Model(&role).Where("id = ?", val).Select()
 		if err != nil {
-			httpValidationErrorResponse(c, fmt.Sprintf("pg: no role (%d) in result set", val))
+			httpErrorResponse(c, err.Error(), http.StatusBadRequest, fmt.Sprintf("pg: no role (%d) in result set", val))
 			return
 		}
 	}
 
 	err = db.GetConnection().Model(&user).Where("id = ?", id).Select()
 	if err != nil {
-		httpInternalServerErrorResponse(c, err.Error())
+		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 		return
 	}
 
@@ -214,13 +213,13 @@ func updateUserById(c *gin.Context) {
 		WherePK().Returning("*").Update()
 
 	if err != nil {
-		httpInternalServerErrorResponse(c, err.Error())
+		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 		return
 	}
 
 	err = db.GetConnection().Model(&userRoles).Where("user_id = ?", user.ID).Select()
 	if err != nil {
-		httpValidationErrorResponse(c, err.Error())
+		httpErrorResponse(c, err.Error(), http.StatusBadRequest, "-")
 		return
 	}
 
@@ -229,13 +228,13 @@ func updateUserById(c *gin.Context) {
 			Where("role_id = ?", item.RoleID).Select()
 
 		if err != nil {
-			httpInternalServerErrorResponse(c, err.Error())
+			httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 			return
 		}
 
 		err = db.GetConnection().Delete(&item)
 		if err != nil {
-			httpInternalServerErrorResponse(c, err.Error())
+			httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 			return
 		}
 	}
@@ -251,14 +250,14 @@ func updateUserById(c *gin.Context) {
 
 		err = db.GetConnection().Insert(&userRole)
 		if err != nil {
-			httpInternalServerErrorResponse(c, err.Error())
+			httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 			return
 		}
 	}
 
 	err = db.GetConnection().Model(&user).Column("Roles").Where("id = ?", id).Select()
 	if err != nil {
-		httpInternalServerErrorResponse(c, err.Error())
+		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 		return
 	}
 
@@ -266,14 +265,11 @@ func updateUserById(c *gin.Context) {
 	json, err := json.Marshal(user)
 	err = redisdb.GetConnection().Set(fmt.Sprintf("user_%s", id), json, 0).Err()
 	if err != nil {
-		panic(err)
+		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
+		return
 	}
 
-	result := map[string]interface{}{
-		"user": "Update user successfully",
-	}
-
-	httpOkResponse(c, result)
+	httpSuccessResponse(c, nil, http.StatusOK, "Update user successfully")
 }
 
 func deleteUserById(c *gin.Context) {
@@ -285,19 +281,19 @@ func deleteUserById(c *gin.Context) {
 		"id": validation.Validate(id, validation.Required),
 	}.Filter()
 	if err != nil {
-		httpValidationErrorResponse(c, err.Error())
+		httpErrorResponse(c, err.Error(), http.StatusBadRequest, "-")
 		return
 	}
 
 	err = db.GetConnection().Model(&user).Column("Roles").Where("id = ?", id).Select()
 	if err != nil {
-		httpInternalServerErrorResponse(c, err.Error())
+		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 		return
 	}
 
 	err = db.GetConnection().Model(&userRoles).Where("user_id = ?", user.ID).Select()
 	if err != nil {
-		httpInternalServerErrorResponse(c, err.Error())
+		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 		return
 	}
 
@@ -306,31 +302,28 @@ func deleteUserById(c *gin.Context) {
 			Where("role_id = ?", item.RoleID).Select()
 
 		if err != nil {
-			httpInternalServerErrorResponse(c, err.Error())
+			httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 			return
 		}
 
 		err = db.GetConnection().Delete(&item)
 		if err != nil {
-			httpInternalServerErrorResponse(c, err.Error())
+			httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 			return
 		}
 	}
 
 	err = db.GetConnection().Delete(&user)
 	if err != nil {
-		httpInternalServerErrorResponse(c, err.Error())
+		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 		return
 	}
 
 	err = redisdb.GetConnection().Set(fmt.Sprintf("user_%s", id), "", 0).Err()
 	if err != nil {
-		panic(err)
+		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
+		return
 	}
 
-	result := map[string]interface{}{
-		"user": "Delete user successfully",
-	}
-
-	httpOkResponse(c, result)
+	httpSuccessResponse(c, nil, http.StatusOK, "Delete user successfully")
 }
