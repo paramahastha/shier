@@ -6,14 +6,13 @@ import (
 	"time"
 
 	"shier/internal/models"
-	"shier/pkg/db"
 
 	"github.com/gin-gonic/gin"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"
 )
 
-func signup(c *gin.Context) {
+func (s *Server) signup(c *gin.Context) {
 	var role models.Role
 
 	form := &struct {
@@ -44,7 +43,7 @@ func signup(c *gin.Context) {
 	// Check existing role in db
 	for _, val := range uniqueNum(form.Roles) {
 
-		err = db.GetConnection().Model(&role).Where("id = ?", val).Select()
+		err = s.DB.Model(&role).Where("id = ?", val).Select()
 		if err != nil {
 			httpErrorResponse(c, err.Error(), http.StatusBadRequest, fmt.Sprintf("pg: no role (%d) in result set", val))
 			return
@@ -60,7 +59,7 @@ func signup(c *gin.Context) {
 		UpdatedAt: time.Now(),
 	}
 
-	err = db.GetConnection().Insert(&user)
+	err = s.DB.Insert(&user)
 	if err != nil {
 		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
@@ -76,7 +75,7 @@ func signup(c *gin.Context) {
 			UpdatedAt: time.Now(),
 		}
 
-		err = db.GetConnection().Insert(&userRole)
+		err = s.DB.Insert(&userRole)
 		if err != nil {
 			httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 			return
@@ -86,7 +85,7 @@ func signup(c *gin.Context) {
 	httpSuccessResponse(c, nil, http.StatusCreated, "Register successfully")
 }
 
-func signin(c *gin.Context) {
+func (s *Server) signin(c *gin.Context) {
 	var user models.User
 
 	form := &struct {
@@ -101,7 +100,7 @@ func signin(c *gin.Context) {
 		"password": validation.Validate(form.Password, validation.Required),
 	}.Filter()
 
-	err = db.GetConnection().Model(&user).Where("email = ?", form.Email).Select()
+	err = s.DB.Model(&user).Where("email = ?", form.Email).Select()
 	if err != nil {
 		httpErrorResponse(c, err.Error(), http.StatusForbidden, "Invalid email or password.")
 		return

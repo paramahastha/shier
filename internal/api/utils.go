@@ -18,8 +18,9 @@ func uniqueNum(intSlice []int) []int {
 	return list
 }
 
-func DoRequest(handler http.Handler, method, path string, body io.Reader) (*httptest.ResponseRecorder, error) {
+func doRequest(handler http.Handler, method, path string, body io.Reader) (*httptest.ResponseRecorder, error) {
 	req, err := http.NewRequest(method, path, body)
+	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		return nil, err
 	}

@@ -1,50 +1,45 @@
 package api
 
 import (
-	"fmt"
-	"net/http"
-
 	"github.com/gin-gonic/gin"
+	"github.com/go-pg/pg"
+	"github.com/go-redis/redis"
 )
 
-func SetupRouter() *gin.Engine {
-	router := gin.Default()
-
-	router.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": map[string]string{
-				"message": "Ok",
-			},
-		})
-	})
-
-	v1 := router.Group("/api/v1")
-	{
-		// auth api
-		v1.POST("/sign-up", signup)
-		v1.POST("/sign-in", signin)
-
-		// users api
-		v1.GET("/users", getAllUsers)
-		v1.POST("/users", createUser)
-		v1.GET("/users/:id", getUserById)
-		v1.PUT("/users/:id", updateUserById)
-		v1.DELETE("/users/:id", deleteUserById)
-
-		// role api
-		v1.GET("/roles", getAllRoles)
-		v1.POST("/roles", createRole)
-		v1.GET("/roles/:id", getRoleById)
-		v1.PUT("/roles/:id", updateRoleById)
-		v1.DELETE("/roles/:id", deleteRoleById)
-	}
-
-	return router
+type Server struct {
+	DB     *pg.DB
+	Router *gin.Engine
+	Redis  *redis.Client
 }
 
-func (c *Config) Start() {
-	router := SetupRouter()
+func (s *Server) InitDB(url string, debug bool) error {
+	opt, err := pg.ParseURL(url)
+	if err != nil {
+		return err
+	}
 
-	listenPort := fmt.Sprintf(":%s", c.ListenPort)
-	router.Run(listenPort)
+	s.DB = pg.Connect(opt)
+
+	// ensure database connection is successfully
+	_, err = s.DB.Exec("SELECT 1")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Server) InitRedis(addr, password string, db int) error {
+	s.Redis = redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: password,
+		DB:       db,
+	})
+
+	_, err := s.Redis.Ping().Result()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

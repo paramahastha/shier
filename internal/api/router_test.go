@@ -9,21 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateUser(t *testing.T) {
-
-	var payload = []byte(`{
-		"first_name": "foo",
-		"last_name":  "bar",
-		"email":      "foo.bar@mail.com",
-		"password":   "secret",
-		"confirm":    "secret",
-		"roles": [1]}`)
+func TestStatusOk(t *testing.T) {
+	var payload = []byte(`{"message": "hello world"}`)
 
 	// expected body
-	body := map[string]interface{}{
-		"data":    nil,
-		"code":    201,
-		"message": "Create user successfully",
+	body := map[string]string{
+		"message": "hello world",
 	}
 
 	// router
@@ -34,10 +25,10 @@ func TestCreateUser(t *testing.T) {
 
 	// Assert we encoded correctly,
 	// the request gives a 200
-	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 
 	// Convert json response to a map
-	var response map[string]interface{}
+	var response map[string]string
 	err := json.Unmarshal([]byte(w.Body.Bytes()), &response)
 
 	// Grab the value & whether or not it exists

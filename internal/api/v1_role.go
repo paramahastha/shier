@@ -5,15 +5,14 @@ import (
 	"time"
 
 	"shier/internal/models"
-	"shier/pkg/db"
 
 	"github.com/gin-gonic/gin"
 	validation "github.com/go-ozzo/ozzo-validation"
 )
 
-func getAllRoles(c *gin.Context) {
+func (s *Server) getAllRoles(c *gin.Context) {
 	var roles []models.Role
-	err := db.GetConnection().Model(&roles).Select() // get all roles
+	err := s.DB.Model(&roles).Select() // get all roles
 
 	if err != nil {
 		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
@@ -26,7 +25,7 @@ func getAllRoles(c *gin.Context) {
 	httpSuccessResponse(c, result["data"], http.StatusOK, "-")
 }
 
-func createRole(c *gin.Context) {
+func (s *Server) createRole(c *gin.Context) {
 	form := &struct {
 		Name string `form:"name" json:"name"`
 	}{}
@@ -48,7 +47,7 @@ func createRole(c *gin.Context) {
 		UpdatedAt: time.Now(),
 	}
 
-	err = db.GetConnection().Insert(&role)
+	err = s.DB.Insert(&role)
 	if err != nil {
 		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 		return
@@ -57,13 +56,13 @@ func createRole(c *gin.Context) {
 	httpSuccessResponse(c, nil, http.StatusCreated, "Create role successfully")
 }
 
-func getRoleById(c *gin.Context) {
+func (s *Server) getRoleById(c *gin.Context) {
 	var role models.Role
 
 	id := c.Param("id")
 
 	// get from database
-	err := db.GetConnection().Model(&role).Where("id = ?", id).Select()
+	err := s.DB.Model(&role).Where("id = ?", id).Select()
 	if err != nil {
 		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 		return
@@ -76,7 +75,7 @@ func getRoleById(c *gin.Context) {
 	httpSuccessResponse(c, result["data"], http.StatusOK, "-")
 }
 
-func updateRoleById(c *gin.Context) {
+func (s *Server) updateRoleById(c *gin.Context) {
 	var role models.Role
 
 	form := &struct {
@@ -95,7 +94,7 @@ func updateRoleById(c *gin.Context) {
 		return
 	}
 
-	err = db.GetConnection().Model(&role).Where("id = ?", id).Select()
+	err = s.DB.Model(&role).Where("id = ?", id).Select()
 	if err != nil {
 		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 		return
@@ -107,7 +106,7 @@ func updateRoleById(c *gin.Context) {
 		UpdatedAt: time.Now(),
 	}
 
-	_, err = db.GetConnection().Model(&role).
+	_, err = s.DB.Model(&role).
 		Column("name").
 		WherePK().Returning("*").Update()
 
@@ -119,7 +118,7 @@ func updateRoleById(c *gin.Context) {
 	httpSuccessResponse(c, nil, http.StatusOK, "Update role successfully")
 }
 
-func deleteRoleById(c *gin.Context) {
+func (s *Server) deleteRoleById(c *gin.Context) {
 	var role models.Role
 
 	id := c.Param("id")
@@ -131,13 +130,13 @@ func deleteRoleById(c *gin.Context) {
 		return
 	}
 
-	err = db.GetConnection().Model(&role).Where("id = ?", id).Select()
+	err = s.DB.Model(&role).Where("id = ?", id).Select()
 	if err != nil {
 		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 		return
 	}
 
-	err = db.GetConnection().Delete(&role)
+	err = s.DB.Delete(&role)
 	if err != nil {
 		httpErrorResponse(c, err.Error(), http.StatusInternalServerError, "-")
 		return

@@ -6,7 +6,6 @@ import (
 
 	"shier/internal/api"
 	"shier/pkg/db"
-	"shier/pkg/redis"
 )
 
 var (
@@ -21,32 +20,22 @@ var (
 func main() {
 	flag.Parse()
 
-	// database configurations
-	dbConfig := db.Config{
-		URL:   *dbUrl,
-		Debug: *debug,
-	}
+	// Init server
+	server := api.Server{}
 
 	// database connection
-	dbConn, err := db.NewConnection(&dbConfig)
+	err := server.InitDB(*dbUrl, *debug)
 	if err != nil {
 		log.Fatalf("database connection failed")
 	}
-	defer dbConn.Close()
-
-	// redis configurations
-	redisConfig := redis.Config{
-		Addr:     *redisAddr,
-		Password: *redisPass,
-		DB:       *redisDb,
-	}
+	defer server.DB.Close()
 
 	// redis connection
-	err = redis.NewConnection(&redisConfig)
+	err = server.InitRedis(*redisAddr, *redisPass, *redisDb)
 	if err != nil {
 		log.Fatalf("redis connection failed")
 	}
-	defer redis.GetConnection().Close()
+	defer server.Redis.Close()
 
 	// run migrations
 	err = db.Migrate(*dbUrl)
@@ -54,10 +43,5 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	// server configurations
-	apiConfig := api.Config{
-		ListenPort: *listenPort,
-	}
-
-	apiConfig.Start() // start server
+	server.SetupRouter(*listenPort) // start server
 }
